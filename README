@@ -1,3 +1,5 @@
+++ This is a prototype. Translation has not been implemented. ++
+
 This module is an extension for Sphinx. It defines a role :hover: which takes a single string argument of the form `arg1,arg2`. 
 
 In the generated html code the string 'arg1' is highlighted and will provide a translation of the string 'arg2' to English (from Icelandic) on mouse-over based on the stae.is/os database. If no comma is found in the argument, arg2 is assumed to be the same as arg1.
