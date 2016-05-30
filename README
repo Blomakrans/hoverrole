@@ -1,0 +1,16 @@
+This module is an extension for Sphinx. It defines a role :hover: which takes a single string argument of the form `arg1,arg2`. 
+
+In the generated html code the string 'arg1' is highlighted and will provide a translation of the string 'arg2' to English (from Icelandic) on mouse-over based on the stae.is/os database. If no comma is found in the argument, arg2 is assumed to be the same as arg1.
+
+Example:
+========
+Ef gefinn er rétthyrndur þríhyrningur segir reglan til um að ef lögð eru saman önnur veldi :hover:`skammhliða,skammhlið` þríhyrningsins jafngildi sú summa öðru :hover:`veldi` langhliðarinnar.
+
+Installation:
+=============
+1. Navigate to the folder containing this README file.
+2. Run the following commands:
+	>>python setup.py build
+	>>sudo python setup.py install
+3. Move 'layout.html' to your '_templates' directory. If there already exists a custom layout file then copy the contents of 'layout.html' to that file.
+4. Add 'hoverrole.hoverrole' to your extensions in 'conf.py'
