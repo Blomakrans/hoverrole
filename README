@@ -1,8 +1,8 @@
-++ This is a prototype. Translation has not been implemented. ++
-
 This module is an extension for Sphinx. It defines a role :hover: which takes a single string argument of the form `arg1,arg2`. 
 
-In the generated html code the string 'arg1' is highlighted and will provide a translation of the string 'arg2' to English (from Icelandic) on mouse-over based on the stae.is/os database. If no comma is found in the argument, arg2 is assumed to be the same as arg1.
+In the Sphinx-generated HTML code the string 'arg1' is highlighted and will provide a translation of the string 'arg2' to English (from Icelandic) on mouse-over based on the stae.is/os database (stored locally in 'ordasafn.py'). If no comma is found in the argument, 'arg2' is assumed to be the same as 'arg1'.
+
+In Sphinx-generated Latex code, 'arg1' is simply made italic.
 
 Example:
 ========
@@ -16,3 +16,9 @@ Installation:
 	>>sudo python setup.py install
 3. Move 'layout.html' to your '_templates' directory. If there already exists a custom layout file then copy the contents of 'layout.html' to that file.
 4. Add 'hoverrole.hoverrole' to your extensions in 'conf.py'
+
+Planned additions:
+==================
+- Currently the extension provides a single translation of 'arg2'. If an exact match is found in the database it is used. Otherwise, the first term containing 'arg2' is used. Options should be implemented to configure if more translations should be provided and if related terms and word class should be shown.
+- The extension does not support English to Icelandic translation (although ordaskra.py does).
+- List of translated terms for the whole document.
