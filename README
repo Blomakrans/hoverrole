@@ -20,5 +20,5 @@ Installation:
 Planned additions:
 ==================
 - Currently the extension provides a single translation of 'arg2'. If an exact match is found in the database it is used. Otherwise, the first term containing 'arg2' is used. Options should be implemented to configure if more translations should be provided and if related terms and word class should be shown.
-- The extension does not support English to Icelandic translation (although ordaskra.py does).
+- The extension does not support English to Icelandic translation (although ordaskra.py does). A possible (and easy) solution is: In case of no is-to-en translation found, try en-to-is. This solution has the downside that when is-to-en translation fails (e.g. in case of typo) a en-to-is translation may be provided instead without the user noticing.
 - List of translated terms for the whole document.

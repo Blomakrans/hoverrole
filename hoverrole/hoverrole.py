@@ -27,10 +27,10 @@ def make_hover_node(word,term):
     translation = ordaskra.isTranslate(term)
     # If no translation is found, append error message instead of translation.
     if translation == '':
-        errorMsg = u'Ekki fannst þýðing á hugtakinu: %s' %term
-        codebit = '<a class="tooltip" target="_blank">'+word+'<span><strong>'+errorMsg+'</strong></span></a>'
+        errorMsg = u'Ekki fannst þýðing á hugtakinu: ' 
+        codebit = '<a class="tooltip" target="_blank">'+word+'<span><staelink style="line-height:4px; font-size:80%;">'+errorMsg+'<i>'+term+'</i></staelink></span></a>'
     else:
-        codebit = '<a href="http://www.stae.is/os/leita/'+unicode(translation.replace(" ","_"))+'" class="tooltip" target="_blank">'+word+'<span>en: <i>'+unicode(translation)+u'</i><br><strong>Smelltu</strong> fyrir ítarlegri þýðingu.</span></a>'
+        codebit = '<a href="http://www.stae.is/os/leita/'+unicode(translation.replace(" ","_"))+'" class="tooltip" target="_blank">'+word+'<span>en: <i>'+unicode(translation)+u'</i><staelink style="font-size:80%;"><br><strong>Smelltu</strong> fyrir ítarlegri þýðingu.</staelink></span></a>'
 
     # Create new hover object.
     node = hover()
