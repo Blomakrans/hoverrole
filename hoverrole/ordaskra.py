@@ -27,30 +27,53 @@ if __name__ == "__main__":
 	targetfile.close()
 
 # Look-up and translate the Icelandic searchterm 'isTerm' to English.
-# Returns only the top result and only the first 'enTerm' translation of it.
-def isTranslate(isTerm):
+# Returns a list containing a single translation if transNum is 'single' 
+# and all found translations if transNum is 'all'.
+def isTranslate(isTerm,transNum):
 	results = lookUp(isTerm,'isTerm')
 	topResult = results[0]
-	try: 
-		translation  = topResult['enTerm']
-		return translation[0]
-	except KeyError:
-		print("No results found for Icelandic term:  '%s'" %isTerm)
-		translation = ''
-	return translation
+	translation = []
+	if transNum == 'all':
+		for item in results:
+			try:
+				translation.append(item['enTerm'])
+			except KeyError:
+				continue
+		if len(translation) == 0:
+			print ("No results found for Icelandic term: '%s'" %isTerm)
+		return translation
+	else:
+		try:
+			translation.append( topResult['enTerm'])
+			return translation
+		except KeyError:
+			print("No results found for Icelandic term:  '%s'" %isTerm)
+		return translation
+
 
 # Look-up and translate the English searchterm 'enTerm' to Icelandic.
-# Returns only the top result and only the first 'isTerm' translation of it.
-def enTranslate(enTerm):	
+# Returns a list containing a single translation if transNum is 'single' 
+# and all found translations if transNum is 'all'.
+def enTranslate(enTerm,transNum):	
 	results = lookUp(enTerm,'enTerm')
 	topResult = results[0]
-	try:
-		translation  = topResult['isTerm']
-		return translation[0]
-	except KeyError:
-		print("No results found for English term:  '%s'" %enTerm)
-		translation = ''
-	return translation
+	translation = []
+	if transNum == 'all':
+		for item in results:
+			try:
+				translation.append(item['isTerm'])
+			except KeyError:
+				continue
+		if len(translation) == 0:
+			print ("No results found for English term: '%s'" %enTerm)
+		return translation
+	else:
+		try:
+			translation.append( topResult['isTerm'])
+			return translation[0]
+		except KeyError:
+			print("No results found for English term:  '%s'" %enTerm)
+		return translation
 
 # Look-up all relevant info for the searchterm 'sTerm' under the key 'key'.
 def lookUp(sTerm,key):
@@ -62,7 +85,7 @@ def lookUp(sTerm,key):
 
 	results = []
 	# For each line in the dictionary 'os', find matching results and add
-	# to the 'results' list. Exact matches are added to the front of 'results'.
+	# to the 'results' list.
 	for line in ordasafn.os:
 		try: 
 			dictTerm = line[key]
@@ -72,10 +95,6 @@ def lookUp(sTerm,key):
 		
 		if any(term == sTerm.lower() for term in dictTerm):
 			# Exact dictionary match. Result is added to front of list of results.
-			results.insert(0,line)
-
-		if any(sTerm.lower() in term for term in dictTerm):
-			# Inexact dictionary match. Result is added to back of list of results.
 			results.append(line)
 
 	if results == []:
@@ -95,6 +114,7 @@ def extractValues(line):
 				'id':data[0].split(', '),
 				'translNum':data[1].split(', '),
 				'enTerm':data[2].split(', '),
+				'context':data[3].split(', '),
 				'class':data[4].split(', '),
 				'isTerm':data[5].split(', '),
 				'synonyms':data[6].split(', '),
@@ -140,7 +160,7 @@ def createDictFromFile():
 	# 1: Line number
 	# 2: Number of translations
 	# 3: English searchterm
-	# 4: Unused
+	# 4: Context which term is used (e.g. "in Calculus" or "in set theory")
 	# 5: Word class. Numbers 3,5 and 7 represent adjectives, nouns and verbs respectively.
 	# 6: Icelandic translation of term.
 	# 7: English synonyms

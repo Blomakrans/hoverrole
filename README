@@ -2,7 +2,14 @@ This module is an extension for Sphinx. It defines a role :hover: which takes a 
 
 In the Sphinx-generated HTML code the string 'arg1' is highlighted and will provide a translation of the string 'arg2' to English (from Icelandic) on mouse-over based on the stae.is/os database (stored locally in 'ordasafn.py'). If no comma is found in the argument, 'arg2' is assumed to be the same as 'arg1'.
 
-In Sphinx-generated Latex code, 'arg1' is simply made italic.
+In the Sphinx-generated Latex code 'arg1' can be italicized or made to contain a link to a stae.is translation of the term 'arg2'.
+
+The extension recognizes the following user settings which can be set in conf.py:
+hover_numOfTranslations, default:'single' , changing this to 'all' will include all matches found
+in the dictionary instead of only the top one.
+hover_htmlLinkToStae, default 1, change to 0 if mouse-over in HTML should not link to stae.is translation.
+hover_latexItText, default 1, change to 0 if Latex text should not be italicized.
+hover_latexLinkToStae, default 0, change to 1 if Latex text should link to stae.is translation. Overrides latexItText.
 
 Example:
 ========
@@ -19,6 +26,6 @@ Installation:
 
 Planned additions:
 ==================
-- Currently the extension provides a single translation of 'arg2'. If an exact match is found in the database it is used. Otherwise, the first term containing 'arg2' is used. Options should be implemented to configure if more translations should be provided and if related terms and word class should be shown.
+- Support for other dictionaries.
 - The extension does not support English to Icelandic translation (although ordaskra.py does). A possible (and easy) solution is: In case of no is-to-en translation found, try en-to-is. This solution has the downside that when is-to-en translation fails (e.g. in case of typo) a en-to-is translation may be provided instead without the user noticing.
 - List of translated terms for the whole document.
