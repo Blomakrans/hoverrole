@@ -12,7 +12,7 @@ requires = ['Sphinx>=0.6', 'setuptools']
 
 
 setup(name='hoverroleextension',
-      version=‘0.9’,
+      version=‘0.91’,
       description='Sphinx mouse-over translation extension',
       author='Simon Bodvarsson',
       author_email='simonb92@gmail.com',
