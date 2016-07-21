@@ -5,12 +5,12 @@
 # In the case of :hover:`word`. The string 'term' is assumed to be the same as 'word'
 
 # Author: Símon Böðvarsson
-# 29.06.2016
+# 13.07.2016
 
 from docutils import nodes, utils
 from docutils.parsers.rst.roles import set_classes
 from docutils.parsers.rst import Directive
-import ordaskra
+import dictlookup
 
 def hover_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     # app lets us access configuration settings and the parser as well as save
@@ -31,88 +31,80 @@ def hover_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
 
     node = make_hover_node(word,term,transNum,htmlLink,latexLink,latexIt)
 
-    #env = inliner.document.settings.env.app
-    #env = inliner.document.settings.env
-    #node.state.document.settings.env
-    #if not hasattr(env,'hoverlist'):
-    #    env.hoverlist = []
-    #env.hoverlist.append({
-    #    'word':word,
-    #    'translation':node['translation'],
-    #    })
-
     return [node],[]
 
 def make_hover_node(word,term,transNum,htmlLink,latexLink,latexIt):
      # Create new hover object.
     hover_node = hover()
     hover_node['word'] = word
+    hover_node['term'] = term
 
-    # Get English translation of Icelandic term.
-    translation = ordaskra.isTranslate(term,transNum)
-    # Get first translation
+    # Get translation and citation form of term.
+    dictentry = dictlookup.lookup(term)
     try:
-        singleTranslation = translation[0][0]
-    except:
-        singleTranslation = ""
+        translation = dictentry['enTerm']
+    # If translation was not found create error message and code snippets.
+    except KeyError:
+        errormsg = u'Ekki fannst þýðing á hugtakinu: '
+        html =  '<a class="tooltip" target="_blank">'+word+\
+                '<span><staelink style="line-height:4px; font-size:80%;">'+errormsg+\
+                '<i>'+term+'</i></staelink></span></a>'
+        latex = unicode(word)
+        if latexIt:
+            latex = '\\textit{' + latex + '}'
+        if latexLink:
+            searchURL = 'http://www.stae.is/os/leita/'+unicode(term.replace(" ","\_"))
+            latex = '\\href{' + searchURL +'}{' + word +'}'
 
-    hover_node['translation'] = singleTranslation
+        # Add the HTML and Latex code snippets to the node.
+        hover_node['latexcode'] = latex
+        hover_node['htmlcode'] = html
+        return hover_node
 
-    # Get all translations and add to string.
+    # If a translation was found create string with translations and HTML and Latex code snippets.
     tranStr = ''
-    lastStr = ''
-    for item in translation:
-        # Skip repeated translations
-        if ''+item[0] == lastStr:
-            pass
-        else:
-            tranStr = tranStr + item[0] + ", "
-            lastStr = item[0]
-    allTranslation = tranStr[:-2] + "."
+    for transl in translation:
+        tranStr = tranStr + transl + ", "
+    all_translations = tranStr[:-2] + "."
+    single_translation = translation[0] + "."
 
-    # If no translation was found, append error message instead of translation.
-    if allTranslation == ".":
-        errorMsg = u'Ekki fannst þýðing á hugtakinu: ' 
-        codebit = '<a class="tooltip" target="_blank">'+word+'<span><staelink style="line-height:4px; font-size:80%;">'+errorMsg+'<i>'+term+'</i></staelink></span></a>'
+    # HTML snippet
+    html = '<a '
+    if htmlLink:
+        html = html + 'href="http://www.stae.is/os/leita/'+unicode(single_translation.replace(" ","_")) 
+    if transNum == 'single':
+        html = html + '" class="tooltip" target="_blank">'+word+'<span>en: <i>'+unicode(single_translation)+u'</i>'
+    else: 
+        hover_node['translation'] = all_translations
+        html = html + '" class="tooltip" target="_blank">'+word+'<span>en: <i>'+unicode(all_translations)+u'</i>'
+    if htmlLink:
+        html = html + u'<staelink style="font-size:80%;"><br><strong>Smelltu</strong> fyrir ítarlegri þýðingu.</staelink>'
+    html = html + '</span></a>'
 
-    # Else construct the tooltip according to the user-settings.
-    else:
-        codebit = '<a '
-        if htmlLink:
-            codebit = codebit + 'href="http://www.stae.is/os/leita/'+unicode(singleTranslation.replace(" ","_")) 
-        if transNum == 'single':
-            codebit = codebit + '" class="tooltip" target="_blank">'+word+'<span>en: <i>'+unicode(singleTranslation)+u'</i>'
-        else: 
-            hover_node['translation'] = allTranslation
-            codebit = codebit + '" class="tooltip" target="_blank">'+word+'<span>en: <i>'+unicode(allTranslation)+u'</i>'
-        if htmlLink:
-            codebit = codebit + u'<staelink style="font-size:80%;"><br><strong>Smelltu</strong> fyrir ítarlegri þýðingu.</staelink>'
-        codebit = codebit + '</span></a>'
-
-    # Generate latex code based on conf.py options.
-    latexCode = unicode(word)
+    # Latex snippet
+    latex = unicode(word)
     if latexIt:
-        latexCode = '\\textit{' + latexCode + '}'
+        latex = '\\textit{' + latex + '}'
     if latexLink:
-        urlTerm = singleTranslation.rstrip()
+        urlTerm = single_translation.rstrip()
         searchURL = 'http://www.stae.is/os/leita/'+unicode(urlTerm.replace(" ","\_"))
-        latexCode = '\\href{' + searchURL +'}{' + word +'}'
-
+        latex = '\\href{' + searchURL +'}{' + word +'}'
 
     # Add the HTML and Latex code snippets to the node.
-    hover_node['latexcode'] = latexCode
-    hover_node['htmlcode'] = codebit
+    hover_node['latexcode'] = latex
+    hover_node['htmlcode'] = html
     
     return hover_node
 
 class hover(nodes.General, nodes.Element):
     pass
+    
 
 def html_hover_visit(self,node):
-    self.body.append(node['htmlcode'])
+    pass 
 
 def html_hover_depart(self,node):
-    pass
+    self.body.append(node['htmlcode'])
 
 def tex_hover_visit(self,node):
     pass
@@ -131,40 +123,66 @@ class HoverListDirective(Directive):
         return[hoverlist('')]
 
 def create_hoverlist(app,doctree, fromdocname):
-    wordlist = []
+    # Words is a dictionary with translated terms as keys and translations as values.
+    words = {}
     content = []
 
-    # Fetch all translations
+    # Fetch all hover nodes
     for node in doctree.traverse(hover):
-        word = node['word'].lower()
-        translation = node['translation']
-        if translation == '':
+        word = node['word']
+        term = node['term']
+
+        # Find the citation form of word in binstae
+        searchresult = dictlookup.lookup(word)
+        try:
+            isTerm = searchresult['isTerm']
+        except KeyError:
+            isTerm = word
+
+        # If no translation is found, skip this entry.
+        try:
+            enTerm = searchresult['enTerm']
+        except KeyError:
             continue
 
-        # Only add the current translation if it has not 
-        # already been added.
-        if word in wordlist:
+        if isTerm in words:
+            # Skip entries that are already in the list.
             continue
         else:
-            wordlist.append(word)
+            words[isTerm] = enTerm
 
-        wordnode = nodes.emphasis(word, word)
-        translnode = nodes.Text(" : "+translation)
-        # Add linebreak if using mini-version of list.
+        print('Fetching key: %s, value: %s' %(isTerm,enTerm[0]))
+
+    # Add words and translations (sorted) to nodes.
+    for key,value in sorted(words.items()):
+        if isinstance(key,str):
+            key = key.decode('utf-8')
+        wordnode = nodes.emphasis(key,key)
+        translationstring = " : "
+        for transl in value:
+            if isinstance(transl,str):
+                transl = transl.decode('utf-8')
+            translationstring += transl + ", "
+        translationstring = translationstring[:-2] + "."
+
+        # Add linebreak if smaller version of list is used.
         if app.config.hover_miniTranslationList:
-            translation += "\n "
-        
+            translationstring += "\n"
+
+        translationnode = nodes.Text(translationstring)
+
         # If the larger version of list is requested, create new paragraph.
         if not app.config.hover_miniTranslationList:
             para = nodes.paragraph()
         # If the smaller version of list is requested, create a new line.
         else:
             para = nodes.line()
+        # Append the line/paragraph.
         para += wordnode 
-        para += translnode
-
+        para += translationnode
         content.append(para)
 
+        print ('Appending key: %s,      value: %s' %(key,value))
 
     # Replace all hoverlist nodes with the translations
     for node in doctree.traverse(hoverlist):
@@ -172,18 +190,15 @@ def create_hoverlist(app,doctree, fromdocname):
         if not app.config.hover_translationList:
             node.replace_self([])
             continue 
-
         node.replace_self(content)
+    return
 
 def setup(app):
     # Extension setup.
-
-    # Name of dictionary file to be used without .py (default 'staeOrdasafn').
-    #app.add_config_value('hover_dictfile','staeOrdasafn','html')
     
-    # Number of translations to be displayed. The default 'single' displays only
-    # the first translation, 'all' displays all found translations.
-    app.add_config_value('hover_numOfTranslations','single','html')
+    # Number of translations to be displayed. The default 'all' displays all
+    # found translations, 'single' displays only the first.
+    app.add_config_value('hover_numOfTranslations','all','html')
     # Set to default ('1') if hover target should link to stae.is search for the translated term.
     # Set to '0' if no link should be attached.
     app.add_config_value('hover_htmlLinkToStae',1,'html')
