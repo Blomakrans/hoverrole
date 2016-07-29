@@ -5,22 +5,24 @@
 # In the case of :hover:`word`. The string 'term' is assumed to be the same as 'word'
 
 # Author: Símon Böðvarsson
-# 13.07.2016
+# 29.07.2016
 
 from docutils import nodes, utils
 from docutils.parsers.rst.roles import set_classes
 from docutils.parsers.rst import Directive
 import dictlookup
+import codecs
+import os
 
 def hover_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     # app lets us access configuration settings and the parser as well as save
     # data for later use.
     app = inliner.document.settings.env.app
-    #dictFile = app.config.hover_dictFile
     transNum = app.config.hover_numOfTranslations
     htmlLink = app.config.hover_htmlLinkToStae
     latexLink = app.config.hover_latexLinkToStae
     latexIt = app.config.hover_latexItText
+    translationList = app.config.hover_translationList
 
     # for text input of the form: "word,term"
     try:
@@ -31,7 +33,47 @@ def hover_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
 
     node = make_hover_node(word,term,transNum,htmlLink,latexLink,latexIt)
 
+    # Save the translated term to file for later use in hoverlist.
+    if translationList:
+        save_to_listfile('TEMP_LIST_OF_HOVER_TERMS',node)        
+
     return [node],[]
+
+def save_to_listfile(filename, node):
+    try:
+            newlinecontent = []
+            newlinecontent.append(node['word'])
+            newlinecontent.append(node['term'])
+            newlinecontent.append(node['citationform'])
+            newlinecontent.append(node['translation'])
+    except KeyError:
+        return
+
+    for no,item in enumerate(newlinecontent):
+        # Make sure the strings are all str type and not unicode.
+        if isinstance(item,unicode):
+            newlinecontent[no] = item.encode('utf-8')
+
+    newline = ";".join(newlinecontent)+"\n" 
+
+    try:
+        listfile = open(filename,'r')
+    except IOError:
+    # Create the file if it doesn't exist.
+        createfile = open(filename,'w+')
+        createfile.close()
+        listfile = open(filename,'r')
+
+    listcontents = listfile.readlines()
+    listfile.close
+
+    listcontents.insert(0,newline)
+
+    listfile = open(filename,'w+')
+    listcontents = "".join(listcontents)
+    listfile.write(listcontents)
+    listfile.close()
+    return
 
 def make_hover_node(word,term,transNum,htmlLink,latexLink,latexIt):
      # Create new hover object.
@@ -43,6 +85,8 @@ def make_hover_node(word,term,transNum,htmlLink,latexLink,latexIt):
     dictentry = dictlookup.lookup(term)
     try:
         translation = dictentry['enTerm']
+        hover_node['translation'] = translation
+        hover_node['citationform'] = dictentry['isTerm']
     # If translation was not found create error message and code snippets.
     except KeyError:
         errormsg = u'Ekki fannst þýðing á hugtakinu: '
@@ -123,47 +167,40 @@ class HoverListDirective(Directive):
         return[hoverlist('')]
 
 def create_hoverlist(app,doctree, fromdocname):
+     # If translationlists are set to not appear, replace them with empty nodes.
+    if not app.config.hover_translationList:
+        for node in doctree.traverse(hoverlist):
+            if not app.config.hover_translationList:
+                node.replace_self([])
+        return
+    
     # Words is a dictionary with translated terms as keys and translations as values.
     words = {}
     content = []
 
-    # Fetch all hover nodes
-    for node in doctree.traverse(hover):
-        word = node['word']
-        term = node['term']
+    with codecs.open("TEMP_LIST_OF_HOVER_TERMS", encoding = "utf-8") as listfile:
+        listcontents = listfile.readlines()
+        listfile.close()
 
-        # Find the citation form of word in binstae
-        searchresult = dictlookup.lookup(word)
-        try:
-            isTerm = searchresult['isTerm']
-        except KeyError:
-            isTerm = word
+    for line in listcontents:
+        # Clean up the strings.
+        line = line.split(";")
+        for idx,entry in enumerate(line):
+            beginindex = entry.find("'")
+            newentry = entry[beginindex+1:]
+            line[idx] = newentry
 
-        # If no translation is found, skip this entry.
-        try:
-            enTerm = searchresult['enTerm']
-        except KeyError:
+        citationform = line[2]
+        translation = line[3]
+
+        if citationform in words:
             continue
-
-        if isTerm in words:
-            # Skip entries that are already in the list.
-            continue
-        else:
-            words[isTerm] = enTerm
-
-        print('Fetching key: %s, value: %s' %(isTerm,enTerm[0]))
+        words[citationform] = translation
 
     # Add words and translations (sorted) to nodes.
     for key,value in sorted(words.items()):
-        if isinstance(key,str):
-            key = key.decode('utf-8')
         wordnode = nodes.emphasis(key,key)
-        translationstring = " : "
-        for transl in value:
-            if isinstance(transl,str):
-                transl = transl.decode('utf-8')
-            translationstring += transl + ", "
-        translationstring = translationstring[:-2] + "."
+        translationstring = " : " + value
 
         # Add linebreak if smaller version of list is used.
         if app.config.hover_miniTranslationList:
@@ -182,8 +219,6 @@ def create_hoverlist(app,doctree, fromdocname):
         para += translationnode
         content.append(para)
 
-        print ('Appending key: %s,      value: %s' %(key,value))
-
     # Replace all hoverlist nodes with the translations
     for node in doctree.traverse(hoverlist):
         # If hover_translation userconfig is set to 0 remove all hoverlist nodes.
@@ -191,6 +226,25 @@ def create_hoverlist(app,doctree, fromdocname):
             node.replace_self([])
             continue 
         node.replace_self(content)
+    return 
+
+def delete_hoverlist(app,doctree):
+    if app.config.hover_translationList:
+        try:
+            os.remove('TEMP_LIST_OF_HOVER_TERMS')
+        except:
+            print("Could not remove temporary file: 'TEMP_LIST_OF_HOVER_TERMS'. ",
+                " Erasing contents instead.")
+            try:
+                listfile = open('TEMP_LIST_OF_HOVER_TERMS','w+')
+                emptystring = ""
+                listfile.write(emptystring)
+                listfile.close()
+            except:
+                print("Could not write over contents in: 'TEMP_LIST_OF_HOVER_TERMS'",
+                    " for unknown reasons.")
+    else:
+        pass
     return
 
 def setup(app):
@@ -217,4 +271,5 @@ def setup(app):
     app.add_node(hoverlist)
     app.add_directive('hoverlist',HoverListDirective)
     app.connect('doctree-resolved', create_hoverlist)
+    app.connect('build-finished',delete_hoverlist)
     return{'version': '0.5'}

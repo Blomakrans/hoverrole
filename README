@@ -45,7 +45,10 @@ Installation:
 
 
 
-Planned additions:
-==================
+Bugs and Possible additions:
+============================
+- BUG: Sometimes makehtml or make latexpdf will fail with the error: 
+	IOError: [Errno 2] No such file or directory: 'TEMP_LIST_OF_HOVER_TERMS'
+	Until this is fixed, rerunning the same command should work.
 - Support for other dictionaries. Possibly BÍN look-up for search-terms (See: bin.arnastofnun.is/ ).
 - English-to-Icelandic translation.
