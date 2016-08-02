@@ -5,7 +5,7 @@
 # In the case of :hover:`word`. The string 'term' is assumed to be the same as 'word'
 
 # Author: Símon Böðvarsson
-# 29.07.2016
+# 1.08.2016
 
 from docutils import nodes, utils
 from docutils.parsers.rst.roles import set_classes
@@ -35,7 +35,7 @@ def hover_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
 
     # Save the translated term to file for later use in hoverlist.
     if translationList:
-        save_to_listfile('TEMP_LIST_OF_HOVER_TERMS',node)        
+        save_to_listfile('LIST_OF_HOVER_TERMS',node)        
 
     return [node],[]
 
@@ -178,7 +178,7 @@ def create_hoverlist(app,doctree, fromdocname):
     words = {}
     content = []
 
-    with codecs.open("TEMP_LIST_OF_HOVER_TERMS", encoding = "utf-8") as listfile:
+    with codecs.open("LIST_OF_HOVER_TERMS", encoding = "utf-8") as listfile:
         listcontents = listfile.readlines()
         listfile.close()
 
@@ -231,18 +231,13 @@ def create_hoverlist(app,doctree, fromdocname):
 def delete_hoverlist(app,doctree):
     if app.config.hover_translationList:
         try:
-            os.remove('TEMP_LIST_OF_HOVER_TERMS')
+            listfile = open('LIST_OF_HOVER_TERMS','w+')
+            emptystring = ""
+            listfile.write(emptystring)
+            listfile.close()
         except:
-            print("Could not remove temporary file: 'TEMP_LIST_OF_HOVER_TERMS'. ",
-                " Erasing contents instead.")
-            try:
-                listfile = open('TEMP_LIST_OF_HOVER_TERMS','w+')
-                emptystring = ""
-                listfile.write(emptystring)
-                listfile.close()
-            except:
-                print("Could not write over contents in: 'TEMP_LIST_OF_HOVER_TERMS'",
-                    " for unknown reasons.")
+            print("Could not write over contents in: 'LIST_OF_HOVER_TERMS'",
+                " for unknown reasons. User may need to erase contents manually.")
     else:
         pass
     return
