@@ -1,11 +1,15 @@
 # -*- coding: UTF-8-sig -*-
 
 # Author: Simon Bodvarsson
-# 18.07.2016
+# 12.08.2016
 
 # Create smaller and faster versions of BIN dictionary and Stae.is dictionary.
 # Create a combined dictionary from BIN and Stae.is that allows for much faster
 # look-up of mathematical terms in any form (E.g. look up of 'algebrunnar' is supported).
+
+# Note: This module is not needed for running the extension or for look up in the dictionaries.
+# 		It is only included here for documentation and to show how the dictionary files have 
+#		been generated. 
 
 import csv
 
@@ -21,11 +25,11 @@ def combine():
 		createminBIN()
 		import minBIN
 	try:
-		import minstae
+		from . import minstae
 	except ImportError:
 		print("Dictionary module 'minstae.py' not found. Creating it from 'ordasafn.py'...")
 		createminstae()
-		import minstae
+		from . import minstae
 
 	minBIN = minBIN.minBIN
 	stae = minstae.minstae
@@ -35,7 +39,7 @@ def combine():
 	oldkey = ''
 	loopcount = 0
 	lastcount = 0
-	print( 'Total number of keys: %d' %binSize)
+	print(( 'Total number of keys: %d' %binSize))
 
 	# Look up every 'key' from BIN library in stae.is library.
 	for key in minBIN:
@@ -50,7 +54,7 @@ def combine():
 		loopcount +=1
 		if loopcount >= lastcount+100000:
 			perc = 100*loopcount/binSize
-			print ('Working: %d of total %d, %d %%' %(loopcount,binSize, perc))
+			print(('Working: %d of total %d, %d %%' %(loopcount,binSize, perc)))
 			lastcount = loopcount
 
 		# For each citation_form given in BIN, look it up in stae db
@@ -103,7 +107,7 @@ def createminBIN():
 					# add 'cit_form' to the list w. key 'form'
 					newDict[form].append(cit_form)
 	saveDictFile(newDict,'minBIN')
-	print "Finished. Saved to file 'minBIN.py'"
+	print("Finished. Saved to file 'minBIN.py'")
 
 # Create a smaller version of Stae.is dictionary with the Icelandic citation-form as 
 # 'key' and the English citation-forms as 'values'. Saved to file 'minstae.py'.
@@ -118,7 +122,7 @@ def createminstae():
 	for item in ordasafn.os:
 		currentEntry +=1
 		if currentEntry > (lastprinted + 100):
-			print('Progress: Entry %d out of %d total' %(currentEntry,totalEntries))
+			print(('Progress: Entry %d out of %d total' %(currentEntry,totalEntries)))
 			lastprinted = currentEntry
 		try:
 			isTermList = item['isTerm']
@@ -150,7 +154,7 @@ def createminstae():
 				newDict[newkey] = {'enTerm':item['enTerm']}
 
 	saveDictFile(newDict,'minstae')
-	print "Finished. Saved to file 'minstae.py'"
+	print("Finished. Saved to file 'minstae.py'")
 
 # Create dictionary file 'ordasafn.py' from Stae.is datafile: fileName.
 # (Original filename for stae.is file is 'output')
@@ -181,9 +185,9 @@ def createOrdasafn(fileName):
 		ordasafn[index] = extractOSValues(line)
 
 	targetfile = open('ordasafn.py','w+')
-	print >>targetfile, r'# -*- coding: UTF-8-sig -*-'
-	print >>targetfile, 'os =',
-	print >>targetfile, ordasafn
+	print(r'# -*- coding: UTF-8-sig -*-', file=targetfile)
+	print('os =', end=' ', file=targetfile)
+	print(ordasafn, file=targetfile)
 	targetfile.close()
 
 # Helper function for createOrdasafn().
@@ -207,16 +211,34 @@ def extractOSValues(line):
 				'relatedTerms':data[7].split(', '),
 			}
 	# Replace empty values with empty string.
-	for key,value in values.iteritems():
+	for key,value in values.items():
 		if len(value) == 1 and value[0].find('\\')>-1:
 			value[0] = ""
 
 	return values
 
+# Add a leading 'b' in front of all values of dictionary. Used for python 3 compatibilty.
+def makeByteStrings(filename):
+	targetfile = open(filename + '.py','r')
+	dictionary = targetfile.readlines()
+	print(dictionary)
+	targetfile.close()
+	for index,line in enumerate(dictionary):
+		line = line.replace(" '"," b'")
+		line = line.replace("{'", "{b'")
+		dictionary[index] = line.replace("['", "[b'")
+
+	dictionary.remove(dictionary[0])
+	targetfile = open(filename + '.py','w+')
+	print(r'# -*- coding: UTF-8-sig -*-', file=targetfile)
+	print(dictionary[0], file=targetfile)
+	targetfile.close()
+
+
 # Save dict 'dictionary' to file 'filename.py'
 def saveDictFile(dictionary,filename):
 	targetfile = open(filename + '.py','w+')
-	print >>targetfile, r'# -*- coding: UTF-8-sig -*-'
-	print >>targetfile, (filename +' ='),
-	print >>targetfile, dictionary
+	print(r'# -*- coding: UTF-8-sig -*-', file=targetfile)
+	print((filename +' ='), end=' ', file=targetfile)
+	print(dictionary, file=targetfile)
 	targetfile.close()

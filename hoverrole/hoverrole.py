@@ -10,9 +10,10 @@
 from docutils import nodes, utils
 from docutils.parsers.rst.roles import set_classes
 from docutils.parsers.rst import Directive
-import dictlookup
 import codecs
 import os
+import sys
+from . import dictlookup
 
 def hover_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     # app lets us access configuration settings and the parser as well as save
@@ -27,6 +28,7 @@ def hover_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     # for text input of the form: "word,term"
     try:
         [word,term] = text.split(",")
+        term = term.lstrip()
     # If no 'term' is provided, it is assumed to be the same as 'word'.
     except ValueError: 
         word=term=text
@@ -50,9 +52,9 @@ def save_to_listfile(filename, node):
         return
 
     for no,item in enumerate(newlinecontent):
-        # Make sure the strings are all str type and not unicode.
-        if isinstance(item,unicode):
-            newlinecontent[no] = item.encode('utf-8')
+        # Make sure the strings are all str type and not bytes.
+        if isinstance(item,bytes):
+            newlinecontent[no] = item.decode('utf-8')
 
     newline = ";".join(newlinecontent)+"\n" 
 
@@ -84,20 +86,21 @@ def make_hover_node(word,term,transNum,htmlLink,latexLink,latexIt):
     # Get translation and citation form of term.
     dictentry = dictlookup.lookup(term)
     try:
-        translation = dictentry['enTerm']
+        translation = dictentry[b'enTerm']
         hover_node['translation'] = translation
-        hover_node['citationform'] = dictentry['isTerm']
+        hover_node['citationform'] = dictentry[b'isTerm']
     # If translation was not found create error message and code snippets.
     except KeyError:
-        errormsg = u'Ekki fannst þýðing á hugtakinu: '
+        errormsg = 'Ekki fannst þýðing á hugtakinu: '
         html =  '<a class="tooltip" target="_blank">'+word+\
                 '<span><staelink style="line-height:4px; font-size:80%;">'+errormsg+\
                 '<i>'+term+'</i></staelink></span></a>'
-        latex = unicode(word)
+
+        latex = word
         if latexIt:
             latex = '\\textit{' + latex + '}'
         if latexLink:
-            searchURL = 'http://www.stae.is/os/leita/'+unicode(term.replace(" ","\_"))
+            searchURL = 'http://www.stae.is/os/leita/'+term.replace(" ","\_")
             latex = '\\href{' + searchURL +'}{' + word +'}'
 
         # Add the HTML and Latex code snippets to the node.
@@ -108,31 +111,31 @@ def make_hover_node(word,term,transNum,htmlLink,latexLink,latexIt):
     # If a translation was found create string with translations and HTML and Latex code snippets.
     tranStr = ''
     for transl in translation:
-        tranStr = tranStr + transl + ", "
+        tranStr = tranStr + transl.decode('utf-8') + ", "
     all_translations = tranStr[:-2] + "."
-    single_translation = translation[0] + "."
+    single_translation = translation[0].decode('utf-8') + "."
 
     # HTML snippet
     html = '<a '
     if htmlLink:
-        html = html + 'href="http://www.stae.is/os/leita/'+unicode(single_translation.replace(" ","_")) 
+        html = html + 'href="http://www.stae.is/os/leita/'+single_translation.replace(" ","_")
     if transNum == 'single':
-        html = html + '" class="tooltip" target="_blank">'+word+'<span>en: <i>'+unicode(single_translation)+u'</i>'
+        html = html + '" class="tooltip" target="_blank">'+word+'<span>en: <i>'+single_translation+'</i>'
     else: 
         hover_node['translation'] = all_translations
-        html = html + '" class="tooltip" target="_blank">'+word+'<span>en: <i>'+unicode(all_translations)+u'</i>'
+        html = html + '" class="tooltip" target="_blank">'+word+'<span>en: <i>'+all_translations+'</i>'
     if htmlLink:
-        html = html + u'<staelink style="font-size:80%;"><br><strong>Smelltu</strong> fyrir ítarlegri þýðingu.</staelink>'
+        html = html + '<staelink style="font-size:80%;"><br><strong>Smelltu</strong> fyrir ítarlegri þýðingu.</staelink>'
     html = html + '</span></a>'
 
     # Latex snippet
-    latex = unicode(word)
+    latex = word
     if latexIt:
         latex = '\\textit{' + latex + '}'
     if latexLink:
         urlTerm = single_translation.rstrip()
-        searchURL = 'http://www.stae.is/os/leita/'+unicode(urlTerm.replace(" ","\_"))
-        latex = '\\href{' + searchURL +'}{' + word +'}'
+        searchURL = 'http://www.stae.is/os/leita/'+urlTerm.replace(" ","\_")
+        latex = '\\href{' + searchURL[:-1] +'}{' + word +'}'
 
     # Add the HTML and Latex code snippets to the node.
     hover_node['latexcode'] = latex
@@ -178,9 +181,10 @@ def create_hoverlist(app,doctree, fromdocname):
     words = {}
     content = []
 
-    with codecs.open("LIST_OF_HOVER_TERMS", encoding = "utf-8") as listfile:
-        listcontents = listfile.readlines()
-        listfile.close()
+    #with codecs.open("LIST_OF_HOVER_TERMS", encoding = "utf-8") as listfile:
+    listfile = open("LIST_OF_HOVER_TERMS",'r')
+    listcontents = listfile.readlines()
+    listfile.close()
 
     for line in listcontents:
         # Clean up the strings.
@@ -245,9 +249,9 @@ def delete_hoverlist(app,doctree):
 def setup(app):
     # Extension setup.
     
-    # Number of translations to be displayed. The default 'all' displays all
-    # found translations, 'single' displays only the first.
-    app.add_config_value('hover_numOfTranslations','all','html')
+    # Number of translations to be displayed. The default 'single' displays only the first
+    # found translation,  'all' displays all.
+    app.add_config_value('hover_numOfTranslations','single','html')
     # Set to default ('1') if hover target should link to stae.is search for the translated term.
     # Set to '0' if no link should be attached.
     app.add_config_value('hover_htmlLinkToStae',1,'html')
@@ -267,4 +271,4 @@ def setup(app):
     app.add_directive('hoverlist',HoverListDirective)
     app.connect('doctree-resolved', create_hoverlist)
     app.connect('build-finished',delete_hoverlist)
-    return{'version': '0.5'}
+    return{'version': '1'}
