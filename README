@@ -1,4 +1,4 @@
-Warning: This extension requires Python 3!
+Warning: This extension requires Python 3.
 
 This module is an extension for Sphinx. It defines a role :hover: which takes a single string argument of the form `arg1,arg2`. The directive .. hoverlist:: is also defined and contains a list of terms translated by :hover: along with their translations.
 
@@ -51,4 +51,4 @@ Possible additions:
 ============================
 - Support for other dictionaries. Possibly BÍN look-up for search-terms (See: bin.arnastofnun.is/ ).
 - English-to-Icelandic translation.
-- Python 2 suppport.
+- Python 2 support.
